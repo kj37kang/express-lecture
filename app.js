@@ -1,10 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { posts } from './data/posts.js'
+// import { posts } from './data/posts.js'
+import Post from './models/Post.js';
 
-const MONGO_URL = '';
-
-let nextId = 4;
+const PORT = process.env.PORT ?? 3000;
 
 const app = express();
 
@@ -12,7 +11,7 @@ const app = express();
 app.use(express.json());
 
 // 몽고DB 연결
-await mongoose.connect(MONGO_URL);
+await mongoose.connect(process.env.MONGO_URL);
 console.log('데이터베이스에 연결됐어요.');
 
 app.get('/', (req, res) => {
@@ -20,13 +19,14 @@ app.get('/', (req, res) => {
 });
 
 // 게시글 불러오기
-app.get('/api/posts', (req, res) => {
+app.get('/api/posts', async (req, res) => {
+  const posts = await Post.find();
   res.json(posts);
 });
 
-app.get('/api/posts/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const post = posts.find((one) => one.id === id);
+app.get('/api/posts/:id', async (req, res) => {
+  const post = await Post.findById(req.params.id);
+
   if(!post){
     res.status(404).json({
       message: '그런 게시물은 존재하지 않습니다.'
@@ -37,7 +37,7 @@ app.get('/api/posts/:id', (req, res) => {
 });
 
 // 게시글 등록하기
-app.post('/api/posts', (req, res) => {
+app.post('/api/posts', async (req, res) => {
   console.log(req.body);
 
   // 입력값 검증 (validation)
@@ -49,47 +49,35 @@ app.post('/api/posts', (req, res) => {
   }
 
   // 실제 값 추가
-  const newPost = {
+  const newPost = await Post.create({
     ...req.body,
-    id: nextId,
-    likeCount: 0,
-    commentCount: 0,
-    minutesAgo: 0,
-  }
-
-  nextId++;
-  posts.push(newPost);
+  });
 
   res.status(201).json(newPost);
 });
 
 // 좋아요 수정 요청
-app.patch('/api/posts/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const found = posts.find(p => p.id === id);
+app.patch('/api/posts/:id', async (req, res) => {
+  const post = await Post.findByIdAndUpdate(req.params.id, req.body, {
+    returnDocument: 'after',
+  });
 
-  if (!found) {
+  if (!post) {
     res.status(404).json({ message: '그런 게시물은 없어요' });
     return;
   }
 
-  found.likeCount = req.body.likeCount;
-
-  res.json(found);
+  res.json(post);
 });
 
 // 게시글 삭제하기
-app.delete('/api/posts/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const index = posts.findIndex(p => p.id === id);
-  
-  if (index === -1) {
+app.delete('/api/posts/:id', async (req, res) => {
+  const deleted = await Post.findByIdAndDelete(req.params.id);
+
+  if (!deleted) {
     res.status(404).json({ message: '그런 게시물은 없어요' });
     return;
   }
-  
-  const deleted = posts[index];
-  posts.splice(index, 1);
 
   res.json(deleted);
 });
@@ -102,6 +90,21 @@ app.use((req, res) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log('서버가 3000번 포트에서 기다리고 있어요.');
+app.use((err, req, res, next) => {
+  if (err.name === 'CastError') {
+    res.status(404).json({ message: '그런 게시물은 없어요' });
+    return;
+  }
+
+  if (err.status) {
+    res.status(err.status).json({ message: '보낸 내용을 읽을 수 없어요' });
+    return;
+  }
+
+  console.error(err);
+  res.status(500).json({ message: '서버에서 문제가 생겼어요' });
+});
+
+app.listen(PORT, () => {
+  console.log(`서버가 ${PORT}번 포트에서 기다리고 있어요.`);
 });
