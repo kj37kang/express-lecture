@@ -7,10 +7,10 @@ const PORT = process.env.PORT ?? 3000;
 
 const app = express();
 
-// 모든 요청 초압에 작성해서 클라이언트가 보낸 데이터를 재조립
+// 모든 요청 초입에 작동해서 클라이언트가 보낸 json을 재조립
 app.use(express.json());
 
-// 몽고DB 연결
+// 몽고디비 연결
 await mongoose.connect(process.env.MONGO_URL);
 console.log('데이터베이스에 연결됐어요.');
 
@@ -18,12 +18,13 @@ app.get('/', (req, res) => {
   res.send('<h1>인스타그램 서버가 살아 있어요</h1>');
 });
 
-// 게시글 불러오기
+// 전체 게시물 목록 불러오기
 app.get('/api/posts', async (req, res) => {
   const posts = await Post.find();
   res.json(posts);
 });
 
+// 단일 게시물 불러오기
 app.get('/api/posts/:id', async (req, res) => {
   const post = await Post.findById(req.params.id);
 
@@ -36,10 +37,8 @@ app.get('/api/posts/:id', async (req, res) => {
   res.json(post);
 });
 
-// 게시글 등록하기
+// 게시물 등록하기
 app.post('/api/posts', async (req, res) => {
-  console.log(req.body);
-
   // 입력값 검증 (validation)
   const { username, postImage } = req.body;
 
@@ -56,7 +55,7 @@ app.post('/api/posts', async (req, res) => {
   res.status(201).json(newPost);
 });
 
-// 좋아요 수정 요청
+// 좋아요 수정하기
 app.patch('/api/posts/:id', async (req, res) => {
   const post = await Post.findByIdAndUpdate(req.params.id, req.body, {
     returnDocument: 'after',
@@ -70,7 +69,7 @@ app.patch('/api/posts/:id', async (req, res) => {
   res.json(post);
 });
 
-// 게시글 삭제하기
+// 게시물 삭제하기
 app.delete('/api/posts/:id', async (req, res) => {
   const deleted = await Post.findByIdAndDelete(req.params.id);
 

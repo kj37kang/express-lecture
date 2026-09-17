@@ -1,10 +1,10 @@
-### 게시물 목록
+### 책 목록
 GET http://localhost:4000/api/books
 
-### 2번 게시물 하나
+### 2번 책 하나
 GET http://localhost:4000/api/books/2
 
-### 없는 게시물
+### 없는 책
 GET http://localhost:4000/api/books/999
 
 ### 없는 주소

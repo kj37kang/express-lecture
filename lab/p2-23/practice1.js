@@ -44,10 +44,6 @@ app.post('/api/comments', (req, res) => {
   comments.push(newPost);
 
   res.status(201).json(newPost);
-
-  // res.json({
-  //   message: '일단 요청 받음',
-  // });
 });
 
 practice.listen(4000, () => {
