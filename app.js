@@ -30,6 +30,7 @@ app.get('/api/posts', async (req, res) => {
 // 단일 게시물 불러오기
 app.get('/api/posts/:id', async (req, res) => {
   const post = await Post.findById(req.params.id);
+  console.log(req.params);
 
   if(!post){
     res.status(404).json({
