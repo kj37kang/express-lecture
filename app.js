@@ -17,7 +17,11 @@ app.get('/', (req, res) => {
 
 // 전체 게시물 목록 불러오기
 app.get('/api/posts', async (req, res) => {
-  const posts = await prisma.post.findMany(); // SELECT * FROM posts;
+  const posts = await prisma.post.findMany({
+    where: { username: req.query.username },
+    orderBy: { createdAt: 'desc' },
+    take: Number(req.query.limit) || undefined
+  }); // SELECT * FROM posts;
   res.json(posts);
 });
 
