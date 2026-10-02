@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import postRouter from './routes/post.js';
+import { HttpError } from './errors.js';
 
 const PORT = process.env.PORT ?? 3000;
 
@@ -27,6 +28,13 @@ app.use((req, res) => {
 
 // 전역 예외처리 구간
 app.use((err, req, res, next) => {
+  if (err instanceof HttpError) {
+    const body = { message: err.message };
+    if (err.details) body.details = err.details;
+    res.status(err.status).json(body);
+    return;
+  }
+
   if (err.status) {
     res.status(err.status).json({ message: '보낸 내용을 읽을 수 없어요' });
     return;
