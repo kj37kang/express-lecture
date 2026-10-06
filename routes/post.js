@@ -1,6 +1,6 @@
 import express from 'express';
 import * as postService from '../services/postService.js';
-import { NotFoundError } from '../error.js';
+import { NotFoundError } from '../errors.js';
 import { validateBody } from '../middlewares/validate.js';
 import { postCreateSchema, postUpdateSchema } from '../schemas/postSchema.js';
 
