@@ -1,3 +1,4 @@
+// ~/instagram-api/lab/p2-29/prisma.config.js
 import { defineConfig } from 'prisma/config';
 
 process.loadEnvFile();

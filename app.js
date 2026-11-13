@@ -1,32 +1,35 @@
+// ~/instagram-api/app.js
 import express from 'express';
 import cors from 'cors';
-import postRouter from './routes/post.js';
+import postsRouter from './routes/posts.js';
+import authRouter from './routes/auth.js';
 import { HttpError } from './errors.js';
-
-const PORT = process.env.PORT ?? 3000;
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN.split(',').map((one) =>
+  one.trim(),
+);
 
-// 모든 요청 초입에 작동해서 클라이언트가 보낸 json을 재조립
+app.use(cors({
+  origin: allowedOrigins,
+  // credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/', (req, res) => {
-  res.send('<h1>인스타그램 서버가 살아 있어요</h1>');
+  res.send('인스타그램 서버가 살아 있어요');
 });
 
-app.use('/api/posts', postRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/auth', authRouter);
 
-// 404 처리를 기본 설정에서 커스텀 설정으로 변경
-// 순서 중요! 위에 배치하면 정상 동작도 오류로 처리
 app.use((req, res) => {
-  res.status(404).json({
-    message: '그런 게시물은 존재하지 않습니다.'
-  });
+  res.status(404).json({ message: '그런 주소는 없어요' });
 });
 
-// 전역 예외처리 구간
 app.use((err, req, res, next) => {
   if (err instanceof HttpError) {
     const body = { message: err.message };
@@ -43,6 +46,8 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ message: '서버에서 문제가 생겼어요' });
 });
+
+const PORT = process.env.PORT ?? 3000;
 
 app.listen(PORT, () => {
   console.log(`서버가 ${PORT}번 포트에서 기다리고 있어요.`);

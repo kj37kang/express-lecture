@@ -1,25 +1,11 @@
+// ~/instagram-api/lab/practice3.js
 import express from 'express';
 
 const books = [
-   {
-    id: 1,
-    title: '한국사 이상현상 연구원',
-    author: '김저자',
-    stock : 152
-  },
-   {
-    id: 1,
-    title: '싯다르타 - 세계문학전집 58',
-    author: '엮은이',
-    stock : 541
-  },
-   {
-    id: 1,
-    title: '눈 내리는 삼일포',
-    author: '홍길동',
-    stock : 75
-  },
-]
+  { id: 1, title: '어린 왕자', author: '생텍쥐페리', stock: 3 },
+  { id: 2, title: '데미안', author: '헤르만 헤세', stock: 5 },
+  { id: 3, title: '모모', author: '미하엘 엔데', stock: 2 },
+];
 
 let nextId = 4;
 
@@ -34,19 +20,18 @@ app.get('/api/books', (req, res) => {
 app.post('/api/books', (req, res) => {
   const { title, author } = req.body;
 
-  if ( !title || !author ) {
-    res.status(400).json({
-      message: 'title과 author는 꼭 있어야 해요',
-    });
+  if (!title || !author) {
+    res.status(400).json({ message: 'title과 author는 꼭 있어야 해요' });
+    return;
   }
 
   const newBook = {
     ...req.body,
     id: nextId,
     stock: 0,
-  }
+  };
 
-  nextId++;
+  nextId = nextId + 1;
   books.push(newBook);
 
   res.status(201).json(newBook);
@@ -54,31 +39,24 @@ app.post('/api/books', (req, res) => {
 
 app.patch('/api/books/:id', (req, res) => {
   const id = Number(req.params.id);
-  const found = books.find(b => b.id === id);
+  const index = books.findIndex((one) => one.id === id);
 
-  if ( !found ) {
-    res.status(404).json({
-      message: '그런 책은 없어요',
-    });
+  if (index === -1) {
+    res.status(404).json({ message: '그런 책은 없어요' });
     return;
   }
 
-  // for(const key in req.body){
-  //   found.key = req.body.key;
-  // }
   books[index] = { ...books[index], ...req.body, id };
 
-  res.json(found);
+  res.json(books[index]);
 });
 
 app.delete('/api/books/:id', (req, res) => {
   const id = Number(req.params.id);
-  const index = books.findIndex(b => b.id === id);
+  const index = books.findIndex((one) => one.id === id);
 
-  if ( index === -1 ) {
-    res.status(404).json({
-      message: '그런 책은 없어요',
-    });
+  if (index === -1) {
+    res.status(404).json({ message: '그런 책은 없어요' });
     return;
   }
 
@@ -88,6 +66,10 @@ app.delete('/api/books/:id', (req, res) => {
   res.json(deleted);
 });
 
+app.use((req, res) => {
+  res.status(404).json({ message: '그런 주소는 없어요' });
+});
+
 app.listen(4000, () => {
-  console.log('실습 서버 실행 중입니다.');
+  console.log('실습 서버가 4000번 포트에서 기다리고 있어요.');
 });

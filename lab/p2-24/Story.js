@@ -1,3 +1,4 @@
+// ~/instagram-api/lab/Story.js
 import mongoose from 'mongoose';
 
 const storySchema = new mongoose.Schema({

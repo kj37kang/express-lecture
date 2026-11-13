@@ -1,10 +1,9 @@
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/index.js';
+// ~/instagram-api/lab/practice1.js
+import { bookstore } from './bookstore.js';
 
-const adapter = new PrismaPg({ connectionString: process.env.BOOKSTORE_URL });
-export const prisma = new PrismaClient({ adapter });
+const books = await bookstore.book.findMany({ orderBy: { id: 'asc' } });
 
-const books = await prisma.book.findMany({ orderBy: { id: 'asc' } });
-console.log(books)
+console.log(`책 ${books.length}권을 읽었어요.`);
+console.log(books[0]);
 
-await prisma.$disconnect();
+await bookstore.$disconnect();
