@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import postsRouter from './routes/posts.js';
+import likesRouter from './routes/likes.js';
 import authRouter from './routes/auth.js';
 import { HttpError } from './errors.js';
 import cookieParser from 'cookie-parser';
@@ -13,7 +14,6 @@ const allowedOrigins = process.env.CORS_ORIGIN.split(',').map((one) =>
   one.trim(),
 );
 
-
 app.use(logger);
 app.use(cors({
   origin: allowedOrigins,
@@ -21,9 +21,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
 app.use(cookieParser());
-
 
 app.get('/', (req, res) => {
   res.send('인스타그램 서버가 살아 있어요');
@@ -31,6 +29,8 @@ app.get('/', (req, res) => {
 
 app.use('/api/posts', postsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/posts/:id/likes', likesRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: '그런 주소는 없어요' });
