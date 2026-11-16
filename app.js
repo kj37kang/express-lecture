@@ -4,6 +4,7 @@ import cors from 'cors';
 import postsRouter from './routes/posts.js';
 import likesRouter from './routes/likes.js';
 import authRouter from './routes/auth.js';
+import uploadsRouter from './routes/uploads.js';
 import { HttpError } from './errors.js';
 import cookieParser from 'cookie-parser';
 import { logger } from './middlewares/logger.js';
@@ -21,6 +22,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// 올린 사진 파일을 주소로 내보낸다 — /uploads/파일 이름 은 uploads 폴더의 그 파일이다.
+app.use('/uploads', express.static('uploads'));
+
 app.use(cookieParser());
 
 app.get('/', (req, res) => {
@@ -28,9 +32,9 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/posts', postsRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/posts', postsRouter);
 app.use('/api/posts/:id/likes', likesRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/uploads', uploadsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: '그런 주소는 없어요' });
