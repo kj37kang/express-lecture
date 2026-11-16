@@ -34,7 +34,7 @@ const adminOnly = [readRole, requireAdmin];
 // 누구나 볼 수 있는 라우트
 const noticeRouter = express.Router();
 
-// 숨기지 않은 공지 목록
+// 누구나 — 숨기지 않은 공지 목록
 noticeRouter.get('/notices', (req, res) => {
   res.json(notices.filter((notice) => !notice.hidden));
 });
@@ -46,7 +46,7 @@ const adminRouter = express.Router();
 adminRouter.use(adminOnly);
 
 // 관리자만 — 공지 올리기
-adminRouter.post('/notices', adminOnly, (req, res) => {
+adminRouter.post('/notices', (req, res) => {
   const notice = { id: nextId, title: req.body.title, hidden: false };
   nextId += 1;
   notices.push(notice);
@@ -54,8 +54,10 @@ adminRouter.post('/notices', adminOnly, (req, res) => {
 });
 
 // 관리자만 — 공지 지우기
-adminRouter.delete('/notices/:id', adminOnly, (req, res) => {
-  const index = notices.findIndex((notice) => notice.id === Number(req.params.id));
+adminRouter.delete('/notices/:id', (req, res) => {
+  const index = notices.findIndex(
+    (notice) => notice.id === Number(req.params.id),
+  );
 
   if (index === -1) {
     res.status(404).json({ message: '그런 공지는 없어요' });
@@ -69,18 +71,18 @@ adminRouter.delete('/notices/:id', adminOnly, (req, res) => {
 // 관리자만 — 공지 숨기기
 adminRouter.patch('/notices/:id/hide', (req, res) => {
   const notice = notices.find((one) => one.id === Number(req.params.id));
-
+  
   if (!notice) {
     res.status(404).json({ message: '그런 공지는 없어요' });
     return;
   }
-
+  
   notice.hidden = true;
   res.json(notice);
 });
 
-app.use('/api', noticeRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api', noticeRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: '그런 주소는 없어요' });

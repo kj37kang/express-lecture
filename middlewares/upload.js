@@ -19,6 +19,8 @@ const storage = multer.diskStorage({
   },
 });
 
+
+
 export const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -27,7 +29,7 @@ export const upload = multer({
       cb(new BadRequestError('사진 파일만 올릴 수 있어요'));
       return;
     }
-    cb(null, true);
+  cb(null, true);
   },
 });
 
@@ -48,3 +50,4 @@ export function uploadImages(req, res, next) {
     next(err);
   });
 }
+

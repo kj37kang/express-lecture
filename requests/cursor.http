@@ -1,5 +1,13 @@
 # ~/instagram-api/requests/cursor.http
 ### 첫 페이지
+GET http://localhost:3000/api/posts?limit=2
+
+### 2번 게시물 다음 페이지
+GET http://localhost:3000/api/posts?limit=2&cursor=2
+
+
+# ~/instagram-api/requests/cursor.http
+### 첫 페이지
 # @name first
 GET http://localhost:3000/api/posts?limit=2
 
@@ -22,3 +30,12 @@ GET http://localhost:3000/api/posts?limit=2&cursor=eyJpZCI6Mn0
 
 ### 한 번에 너무 많이 달라고 하면
 GET http://localhost:3000/api/posts?limit=100000
+
+### 2번 게시물 지우기
+DELETE http://localhost:3000/api/posts/2
+
+### 옛 화면처럼 게시물 번호를 커서로 보내면
+GET http://localhost:3000/api/posts?limit=2&cursor=2
+
+### 없는 게시물 번호를 커서로 보내면
+GET http://localhost:3000/api/posts?limit=2&cursor=999

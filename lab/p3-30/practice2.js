@@ -15,9 +15,9 @@ const notices = [
 let found = 0;
 
 // 주소의 :id 값으로 공지를 찾아 req.notice 에 담는다
-function findNotice(req, res, next, ____) {
+function findNotice(req, res, next, id) {
   found += 1;
-  const notice = notices.find((one) => one.id === Number(____));
+  const notice = notices.find((one) => one.id === Number(id));
 
   if (!notice) {
     res.status(404).json({ message: '그런 공지는 없어요' });
@@ -30,10 +30,14 @@ function findNotice(req, res, next, ____) {
 
 const router = express.Router();
 
-router.____('____', findNotice);
+router.param('id', findNotice);
 
 router.get('/', (req, res) => {
   res.json(notices);
+});
+
+router.get('/:id', (req, res, next) => {
+  next();
 });
 
 router.get('/:id', (req, res) => {

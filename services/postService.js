@@ -1,7 +1,20 @@
 // ~/instagram-api/services/postService.js
 import { rm } from 'node:fs/promises';
+import path from 'node:path';
 import { prisma } from '../db.js';
 import { BadRequestError, NotFoundError } from '../errors.js';
+import { cursorSchema } from '../schemas/postSchema.js';
+
+
+export async function cursorOf(id) {
+  const post = await prisma.post.findUnique({
+    where: { id },
+    select: { createdAt: true, id: true },
+  });
+
+
+  return post === null ? null : encodeCursor(post);
+}
 
 // 커서는 «마지막으로 내준 게시물의 시각과 번호» 를 문자열 하나로 인코딩한 것이다.
 // 받는 쪽은 뜻을 몰라도 된다 — 받아 두었다가 다음 요청에 그대로 돌려주기만 한다.
@@ -10,9 +23,13 @@ function encodeCursor({ createdAt, id }) {
 }
 
 function decodeCursor(cursor) {
-  const { createdAt, id } = JSON.parse(Buffer.from(cursor, 'base64url').toString());
-
-  return { createdAt: new Date(createdAt), id };
+  try {
+    return cursorSchema.parse(
+      JSON.parse(Buffer.from(cursor, 'base64url').toString()),
+    );
+  } catch {
+    throw new BadRequestError('커서 값이 올바르지 않아요');
+  }
 }
 
 // 목록은 «시각이 늦은 순, 같으면 번호가 큰 순» 이다. 그러니 커서 다음 행은
@@ -24,6 +41,8 @@ function afterCursor({ createdAt, id }) {
     OR: [{ createdAt: { lt: createdAt } }, { id: { lt: id } }],
   };
 }
+
+
 
 // 저장하는 모양과 내보내는 모양은 다르다.
 // 표는 글쓴이를 번호로, 사진을 딴 표의 줄로 갖고 있지만,
@@ -131,6 +150,7 @@ export async function updatePost(id, data) {
     throw error;
   }
 }
+
 
 // 우리 서버에 올린 사진 파일을 지운다. 바깥 주소(https://…)의 사진은 우리 파일이 아니라 건너뛴다.
 async function removeUploadedFiles(imageUrls) {
