@@ -1,4 +1,6 @@
 // ~/instagram-api/app.js
+import { openapi } from './docs/openapi.js';
+import swaggerUi from 'swagger-ui-express';
 import express from 'express';
 import cors from 'cors';
 import postsRouter from './routes/posts.js';
@@ -35,6 +37,12 @@ app.use('/api/posts', postsRouter);
 app.use('/api/posts/:id/likes', likesRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/uploads', uploadsRouter);
+
+// API 문서 — 사람은 /api/docs 화면으로, 프로그램은 /api/openapi.json 으로 읽는다.
+app.get('/api/openapi.json', (req, res) => {
+  res.json(openapi);
+});
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi));
 
 app.use((req, res) => {
   res.status(404).json({ message: '그런 주소는 없어요' });
