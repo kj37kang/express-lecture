@@ -1,8 +1,14 @@
 // ~/instagram-api/docs/openapi.js
-// 우리 API 의 계약을 OpenAPI 형식으로 적은 문서다.
 import { z } from 'zod';
-import { postCreateSchema, postListQuerySchema } from '../schemas/postSchema.js';
+import {
+  postCreateSchema,
+  postListQuerySchema,
+} from '../schemas/postSchema.js';
 
+
+
+
+// 우리 API 의 계약을 OpenAPI 형식으로 적은 문서다.
 const json = (schema) => ({ 'application/json': { schema } });
 
 // 검사에 쓰는 zod 스키마를 OpenAPI 가 읽는 JSON Schema 로 바꾼다.
@@ -33,12 +39,40 @@ export const openapi = {
         summary: '게시물 목록',
         parameters: [
           ...queryParameters(postListQuerySchema),
-          // userId 는 검사 스키마 밖에서 읽는 값이라 손으로 적는다.
-          { name: 'userId', in: 'query', description: '보는 사람의 번호 — 그 사람이 누른 좋아요가 liked 로 온다(숫자가 아니면 세지 않는다)', schema: { type: 'integer' } },
+          {
+            name: 'userId',
+            in: 'query',
+            description:
+              '보는 사람의 번호 — 그 사람이 누른 좋아요가 liked 로 온다(숫자가 아니면 세지 않는다)',
+            schema: { type: 'integer' },
+          },
         ],
         responses: {
-          200: { description: '게시물 한 페이지', content: json({ $ref: '#/components/schemas/PostPage' }) },
-          400: { description: '쿼리 값이 규칙에 안 맞음', content: json({ $ref: '#/components/schemas/Error' }) },
+          200: {
+            description: '게시물 한 페이지',
+            content: json({ $ref: '#/components/schemas/PostPage' }),
+          },
+          400: {
+            description: '쿼리 값이 규칙에 안 맞음',
+            content: json({ $ref: '#/components/schemas/Error' }),
+          },
+        },
+      },
+      post: {
+        summary: '게시물 올리기',
+        requestBody: {
+          required: true,
+          content: json(toSchema(postCreateSchema)),
+        },
+        responses: {
+          201: {
+            description: '만든 게시물 — Location 헤더에 그 게시물의 주소',
+            content: json({ $ref: '#/components/schemas/Post' }),
+          },
+          400: {
+            description: '보낸 내용이 규칙에 안 맞음',
+            content: json({ $ref: '#/components/schemas/Error' }),
+          },
         },
       },
     },
@@ -65,9 +99,15 @@ export const openapi = {
       PostPage: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: { $ref: '#/components/schemas/Post' } },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Post' },
+          },
           hasNext: { type: 'boolean' },
-          nextCursor: { type: ['string', 'null'], description: '다음 요청에 cursor 로 그대로 보낼 값 — 끝이면 null' },
+          nextCursor: {
+            type: ['string', 'null'],
+            description: '다음 요청에 cursor 로 그대로 보낼 값 — 끝이면 null',
+          },
         },
       },
       Error: {

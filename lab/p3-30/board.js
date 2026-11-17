@@ -39,11 +39,14 @@ noticeRouter.get('/notices', (req, res) => {
   res.json(notices.filter((notice) => !notice.hidden));
 });
 
+
 // 관리자만 쓰는 라우트는 이 라우터에 모은다
 const adminRouter = express.Router();
 
+
 // 이 라우터에 들어온 요청은 모두 adminOnly 부터 지나간다
 adminRouter.use(adminOnly);
+
 
 // 관리자만 — 공지 올리기
 adminRouter.post('/notices', (req, res) => {
@@ -83,6 +86,7 @@ adminRouter.patch('/notices/:id/hide', (req, res) => {
 
 app.use('/api/admin', adminRouter);
 app.use('/api', noticeRouter);
+
 
 app.use((req, res) => {
   res.status(404).json({ message: '그런 주소는 없어요' });
