@@ -1,4 +1,4 @@
-@api = http://localhost:3000/api
+@api = http://localhost:3000/api/v2
 
 ### 게시물 하나
 GET {{api}}/posts/1
@@ -35,3 +35,16 @@ POST {{api}}/auth/signup
 Content-Type: application/json
 
 {"emailOrPhone": "010-4242-8888", "name": "김재훈", "username": "jaehoon", "password": "jaehoon12"}
+
+### 깨진 JSON으로 게시물 올리기
+POST {{api}}/posts
+Content-Type: application/json
+
+{"content":
+
+
+### 깨진 JSON으로 가입
+POST {{api}}/auth/signup
+Content-Type: application/json
+
+{"username":

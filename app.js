@@ -12,6 +12,7 @@ import { privateNoCache } from './middlewares/cache.js';
 import { openapi } from './docs/openapi.js';
 import swaggerUi from 'swagger-ui-express';
 import { apiVersion } from './middlewares/version.js';
+import { sendError } from './responses.js';
 
 const app = express();
 
@@ -25,6 +26,10 @@ app.use(cors({
   origin: allowedOrigins,
   // credentials: true,
 }));
+
+// 새 주소로 온 요청이라는 것을 본문을 읽기 전에 적어 둔다 — 본문을 못 읽은 실패도 새 형식으로 답하려고.
+app.use('/api/v2', apiVersion(2));
+
 app.use(express.json());
 
 // 올린 사진 파일을 주소로 내보낸다 — /uploads/파일 이름 은 uploads 폴더의 그 파일이다.
@@ -49,7 +54,7 @@ api.use('/uploads', uploadsRouter);
 // API 응답은 받아 둬도 되지만, 쓸 때마다 서버에 확인하게 한다.
 app.use('/api', privateNoCache);
 // 새 주소 — 버전 2 라고 적어 두고 같은 API 로 보낸다.
-app.use('/api/v2', apiVersion(2), api);
+app.use('/api/v2', api);
 // 옛 주소 — 이미 나간 화면들이 쓰는 주소라 그대로 둔다.
 app.use('/api', api);
 
@@ -59,26 +64,33 @@ app.get('/api/openapi.json', (req, res) => {
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi));
 
-app.use((req, res) => {
-  res.status(404).json({ message: '그런 주소는 없어요' });
+
+// 어느 라우트도 답하지 않은 요청 — 에러 미들웨어에 넘겨 다른 실패와 같은 형식으로 답한다.
+app.use((req, res, next) => {
+  next(new NotFoundError('ROUTE_NOT_FOUND'));
 });
 
 app.use((err, req, res, next) => {
-  if (err instanceof HttpError) {
-    const body = { message: err.message };
-    if (err.details) body.details = err.details;
-    res.status(err.status).json(body);
+  if (res.headersSent) {
+    next(err);
     return;
   }
 
+  if (err instanceof HttpError) {
+    sendError(req, res, err);
+    return;
+  }
+
+  // express.json() 이 본문을 읽지 못했다 — 상태 코드(400 · 413 …)는 그 에러에 들어 있다.
   if (err.status) {
-    res.status(err.status).json({ message: '보낸 내용을 읽을 수 없어요' });
+    sendError(req, res, new HttpError(err.status, 'INVALID_BODY'));
     return;
   }
 
   console.error(err);
-  res.status(500).json({ message: '서버에서 문제가 생겼어요' });
+  sendError(req, res, new HttpError(500, 'INTERNAL_ERROR'));
 });
+
 
 const PORT = process.env.PORT ?? 3000;
 
