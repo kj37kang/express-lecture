@@ -12,7 +12,9 @@ import { privateNoCache } from './middlewares/cache.js';
 import { openapi } from './docs/openapi.js';
 import swaggerUi from 'swagger-ui-express';
 import { apiVersion } from './middlewares/version.js';
+import { oldApiNotice } from './middlewares/deprecation.js';
 import { sendError } from './responses.js';
+import { requireLogin } from './middlewares/auth.js';
 
 const app = express();
 
@@ -27,8 +29,17 @@ app.use(cors({
   // credentials: true,
 }));
 
+// API 문서 — 사람은 /api/docs 화면으로, 프로그램은 /api/openapi.json 으로 읽는다.
+// 버전과 상관없는 주소라 버전을 적는 줄보다 먼저 답한다.
+app.get('/api/openapi.json', (req, res) => {
+  res.json(openapi);
+});
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi));
+
 // 새 주소로 온 요청이라는 것을 본문을 읽기 전에 적어 둔다 — 본문을 못 읽은 실패도 새 형식으로 답하려고.
 app.use('/api/v2', apiVersion(2));
+// 옛 주소로 온 요청에는 언제까지 받을지 알린다 — 본문을 못 읽은 실패에도 붙게 이것도 본문을 읽기 전에.
+app.use('/api', oldApiNotice);
 
 app.use(express.json());
 
@@ -46,9 +57,12 @@ app.get('/', (req, res) => {
 
 // API 라우터 넷을 라우터 하나로 모은다 — 같은 API 를 두 주소에 붙이려고.
 const api = express.Router();
+api.use('/auth', authRouter);
+
+// 여기부터는 로그인한 사람만 지나간다.
+api.use(requireLogin);
 api.use('/posts', postsRouter);
 api.use('/posts/:id/likes', likesRouter);
-api.use('/auth', authRouter);
 api.use('/uploads', uploadsRouter);
 
 // API 응답은 받아 둬도 되지만, 쓸 때마다 서버에 확인하게 한다.
@@ -57,12 +71,6 @@ app.use('/api', privateNoCache);
 app.use('/api/v2', api);
 // 옛 주소 — 이미 나간 화면들이 쓰는 주소라 그대로 둔다.
 app.use('/api', api);
-
-app.get('/api/openapi.json', (req, res) => {
-  res.json(openapi);
-});
-
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi));
 
 
 // 어느 라우트도 답하지 않은 요청 — 에러 미들웨어에 넘겨 다른 실패와 같은 형식으로 답한다.

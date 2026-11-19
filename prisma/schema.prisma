@@ -7,31 +7,45 @@ datasource db {
 }
 
 model User {
-  id            Int        @id @default(autoincrement())
-  username      String     @unique @db.VarChar(50)
-  email         String?    @unique @db.VarChar(255)
-  phone         String?    @unique @db.VarChar(20)
-  name          String?    @db.VarChar(50)
-  passwordHash  String?    @map("password_hash")
-  profileImage  String?    @map("profile_image")
-  deactivatedAt DateTime?  @map("deactivated_at")
-  posts         Post[]
-  comments      Comment[]
-  likes         PostLike[]
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  email        String?   @unique @db.VarChar(255)
+  phone        String?   @unique @db.VarChar(20)
+  name         String?   @db.VarChar(50)
+  passwordHash String?   @map("password_hash")
+  profileImage String?   @map("profile_image")
+  deactivatedAt DateTime? @map("deactivated_at")
+  posts        Post[]
+  comments     Comment[]
+  likes        PostLike[]
+  sessions     Session[]
 
   @@map("users")
 }
 
+// 로그인 세션 — 쿠키에 담아 준 세션 ID 하나가 한 행이다.
+// 사람을 지우면 그 사람의 세션도 함께 지운다(onDelete: Cascade).
+model Session {
+  id        String   @id
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("sessions")
+}
+
 model Post {
-  id           Int         @id @default(autoincrement())
-  authorId     Int         @map("author_id")
-  author       User        @relation(fields: [authorId], references: [id])
-  postAlt      String?     @map("post_alt")
+  id           Int       @id @default(autoincrement())
+  authorId     Int       @map("author_id")
+  author       User      @relation(fields: [authorId], references: [id])
+  postAlt      String?   @map("post_alt")
   content      String?
-  likeCount    Int         @default(0) @map("like_count")
-  commentCount Int         @default(0) @map("comment_count")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at")
+  likeCount    Int       @default(0) @map("like_count")
+  commentCount Int       @default(0) @map("comment_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
   comments     Comment[]
   images       PostImage[]
   likes        PostLike[]

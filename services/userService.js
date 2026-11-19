@@ -1,8 +1,8 @@
 // ~/instagram-api/services/userService.js
-import { randomUUID } from 'node:crypto';
-import bcrypt from 'bcrypt';
 import { prisma } from '../db.js';
-import { ConflictError, NotFoundError } from '../errors.js';
+import { ConflictError } from '../errors.js';
+import bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
 
 // 비밀번호를 해시할 때의 cost — 하나 올리면 해시 한 번에 걸리는 시간이 두 배가 된다.
 const PASSWORD_COST = 12;
@@ -24,9 +24,6 @@ const TAKEN_BY_INDEX = {
 // 휴대폰 번호는 하이픈을 빼고 숫자만 다룬다 — 010-1234-5678 과 01012345678 은 같은 번호다.
 const digitsOnly = (phone) => phone.replaceAll('-', '');
 
-export function findUserByUsername(username) {
-  return prisma.user.findUnique({ where: { username }, select: userFields });
-}
 
 export function findUserById(id) {
   return prisma.user.findUnique({ where: { id }, select: userFields });
@@ -40,27 +37,42 @@ export async function checkPassword(username, password) {
     select: { ...userFields, passwordHash: true },
   });
 
-  // 사람이 없거나 비밀번호가 없어도(password_hash 가 NULL) 가짜 해시와 비교한다.
-  // 실패의 이유와 상관없이 compare 를 한 번씩 거쳐서, 응답이 오기까지 걸리는 시간이 같아진다.
-  const matched = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  const matched = await bcrypt.compare(
+    password,
+    user?.passwordHash ?? DUMMY_HASH,
+  );
 
   // 가짜 해시와 비교했으면 결과와 상관없이 실패다.
   if (!user || user.passwordHash === null || !matched) return null;
 
   const { passwordHash, ...found } = user;
+
+  // 지금보다 낮은 cost 로 만든 해시면, 맞는 비밀번호를 받은 김에 지금 cost 로 다시 만들어 둔다.
+  if (bcrypt.getRounds(passwordHash) < PASSWORD_COST) {
+    await setPassword(username, password);
+  }
+
   return found;
 }
 
 export async function createUser({ password, ...data }) {
   // 누가 부르든(가입 API · 관리자 스크립트) 저장하기 전에 번호를 같은 모양으로 맞춘다.
-  const user = data.phone === undefined ? data : { ...data, phone: digitsOnly(data.phone) };
+  const user =
+    data.phone === undefined
+      ? data
+      : { ...data, phone: digitsOnly(data.phone) };
   // 비밀번호도 누가 부르든 받은 글자 그대로 넣지 않는다 — bcrypt 해시로 바꿔 넣는다.
   // 비밀번호 없이 부르면 해시도 없다(password_hash 는 NULL).
-  const passwordHash = password === undefined ? undefined : await bcrypt.hash(password, PASSWORD_COST);
+  const passwordHash =
+    password === undefined
+      ? undefined
+      : await bcrypt.hash(password, PASSWORD_COST);
 
   try {
-    return await prisma.user.create({ data: { ...user, passwordHash }, select: userFields });
-
+    return await prisma.user.create({
+      data: { ...user, passwordHash },
+      select: userFields,
+    });
   } catch (error) {
     // 사용자 이름·이메일·휴대폰 번호 가운데 하나라도 이미 있으면 UNIQUE 제약이 막는다.
     // 데이터베이스가 알려 준 제약 이름으로 어느 컬럼이 겹쳤는지 구분한다.

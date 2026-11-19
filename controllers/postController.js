@@ -9,7 +9,7 @@ export async function list(req, res) {
   const page = await postService.getPosts({
     username,
     // 서버가 로그인 정보를 쓰기 전까지는 «누가 보는지» 를 주소에 실어 받는다.
-    userId: Number(req.query.userId) || undefined,
+    userId: res.locals.userId,
     limit,
     cursor,
   });
@@ -24,21 +24,28 @@ export async function detail(req, res) {
 }
 
 export async function create(req, res) {
-  const newPost = await postService.createPost(req.body);
-
+  // 글쓴이는 본문이 아니라 로그인 정보로 정한다.
+  const newPost = await postService.createPost({
+    ...req.body,
+    authorId: res.locals.userId,
+  });
   // 새 게시물을 가리키는 주소를 Location 헤더에 싣는다 — 요청이 온 주소(/api/posts · /api/v2/posts) 아래에.
   res.status(201).location(`${req.baseUrl}/${newPost.id}`);
   sendData(res, newPost);
 }
 
 export async function update(req, res) {
-  const post = await postService.updatePost(req.postId, req.body);
+  const post = await postService.updatePost(
+    req.postId,
+    res.locals.userId,
+    req.body,
+  );
 
   sendData(res, post);
 }
 
 export async function remove(req, res) {
-  const deleted = await postService.removePost(req.postId);
+  const deleted = await postService.removePost(req.postId, res.locals.userId);
 
   sendData(res, deleted);
 }
