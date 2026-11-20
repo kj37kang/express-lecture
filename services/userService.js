@@ -12,7 +12,7 @@ const PASSWORD_COST = 12;
 const DUMMY_HASH = await bcrypt.hash(randomUUID(), PASSWORD_COST);
 
 // 응답에 실어 보낼 컬럼만 고른다.
-const userFields = { id: true, username: true, profileImage: true };
+const userFields = { id: true, username: true, profileImage: true, role: true };
 
 // UNIQUE 제약 이름 — 어느 컬럼이 이미 쓰이고 있는지에 따라 에러 코드가 다르다.
 const TAKEN_BY_INDEX = {
@@ -106,4 +106,27 @@ export async function setPassword(username, password) {
     if (error.code === 'P2025') throw new NotFoundError('USER_NOT_FOUND');
     throw error;
   }
+}
+
+// 사람 목록 — 관리자 주소가 부른다. 번호 차례로.
+export function getUsers() {
+  return prisma.user.findMany({ select: userFields, orderBy: { id: 'asc' } });
+}
+
+// 사람의 역할을 바꾼다 — 관리자 스크립트가 부른다.
+export async function setRole(id, role) {
+  try {
+    return await prisma.user.update({ where: { id }, data: { role }, select: userFields });
+  } catch (error) {
+    // 그 번호의 사람이 없으면 바꿀 행이 없다.
+    if (error.code === 'P2025') throw new NotFoundError('USER_NOT_FOUND');
+    throw error;
+  }
+}
+
+// 지금 데이터베이스에 적힌 역할이 관리자인가 — 토큰의 역할은 만든 순간의 값이라, 관리자 권한을 쓸 때는 이것으로 다시 본다.
+export async function isAdmin(id) {
+  const user = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+
+  return user?.role === 'ADMIN';
 }

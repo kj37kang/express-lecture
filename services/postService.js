@@ -5,12 +5,10 @@ import { prisma } from '../db.js';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../errors.js';
 import { cursorSchema } from '../schemas/postSchema.js';
 
+
 // 쓴 사람만 고치고 지울 수 있다 — 게시물이 없으면 404, 있는데 쓴 사람이 아니면 403.
 async function checkAuthor(id, userId) {
-  const post = await prisma.post.findUnique({
-    where: { id },
-    select: { authorId: true },
-  });
+  const post = await prisma.post.findUnique({ where: { id }, select: { authorId: true } });
 
   if (!post) throw new NotFoundError('POST_NOT_FOUND');
   if (post.authorId !== userId) throw new ForbiddenError('NOT_POST_AUTHOR');
@@ -181,8 +179,11 @@ async function removeUploadedFiles(imageUrls) {
   }
 }
 
-export async function removePost(id, userId) {
-  await checkAuthor(id, userId);
+export async function removePost(id, userId, role) {
+  // 관리자는 남의 게시물도 지울 수 있다 — 신고된 게시물을 내리는 일이라, 고치기는 열지 않고 지우기에만 연다.
+  // 토큰이 관리자라고 하면 데이터베이스에서 지금 역할을 한 번 더 본다.
+  const admin = role === 'ADMIN' && (await userService.isAdmin(userId));
+  if (!admin) await checkAuthor(id, userId);
 
   let post;
   try {
